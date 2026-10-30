@@ -5,13 +5,14 @@
 一个可以在本机运行实验的 AI 论文复现工作台。
 
 ![Version](https://img.shields.io/badge/version-0.2.7-7864D9?style=flat-square)
+[![License: MIT](https://img.shields.io/badge/license-MIT-059669?style=flat-square)](LICENSE)
 ![Windows](https://img.shields.io/badge/desktop-Windows%2011%20x64-0078D4?style=flat-square)
 ![CPU](https://img.shields.io/badge/compute-CPU-64748B?style=flat-square)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react&logoColor=white)
 ![Tauri](https://img.shields.io/badge/Tauri-2-24C8D8?style=flat-square&logo=tauri&logoColor=white)
 
-[项目介绍](#about) · [安装使用](#desktop) · [本地开发](#development) · [模型配置](#models) · [打包发布](#packaging)
+[项目介绍](#about) · [安装使用](#desktop) · [本地开发](#development) · [模型配置](#models) · [打包发布](#packaging) · [开源许可](#license)
 
 [下载 Windows 安装包 · v0.2.7](https://github.com/laiduo12345/TrustRepro-public/releases/download/v0.2.7/TrustRepro_0.2.7_x64-setup.exe) · [版本说明与校验文件](https://github.com/laiduo12345/TrustRepro-public/releases/tag/v0.2.7)
 
@@ -167,6 +168,14 @@ var/windows/installer/SHA256SUMS
 科研镜像预装了常用的 CPU 科学计算库，具体版本记录在 [`scientific-requirements.txt`](infra/docker/scientific-requirements.txt)。Agent 可以直接使用兼容的环境；遇到论文指定版本或专用依赖时，再按批准的方案安装。每次运行的可写目录独立，数据库、任务状态和费用记录由后端管理。
 
 这份源码包含开发运行和构建安装包需要的文件，依赖通过 uv 和 pnpm 安装，生成的文件统一放入忽略目录。Tauri 安装器随附的[第三方许可](infra/windows/src-tauri/installer.LICENSE-MIT)也会进入最终安装包。
+
+<a id="license"></a>
+
+## 开源许可
+
+TrustRepro 的项目代码采用 [MIT License](LICENSE) 开源。你可以在保留版权和许可声明的前提下使用、修改和分发本项目，也可以用于商业用途。
+
+第三方依赖与随包资源遵循各自的许可证，原有版权和许可声明予以保留。
 
 ## 反馈与改进
 
