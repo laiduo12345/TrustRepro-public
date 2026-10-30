@@ -13,6 +13,8 @@
 
 [项目介绍](#about) · [安装使用](#desktop) · [本地开发](#development) · [模型配置](#models) · [打包发布](#packaging)
 
+[下载 Windows 安装包 · v0.2.7](https://github.com/laiduo12345/TrustRepro-public/releases/download/v0.2.7/TrustRepro_0.2.7_x64-setup.exe) · [版本说明与校验文件](https://github.com/laiduo12345/TrustRepro-public/releases/tag/v0.2.7)
+
 </div>
 
 <a id="about"></a>
@@ -30,6 +32,10 @@
 <a id="desktop"></a>
 
 ## 在 Windows 上使用
+
+[下载 Windows 安装包 · v0.2.7](https://github.com/laiduo12345/TrustRepro-public/releases/download/v0.2.7/TrustRepro_0.2.7_x64-setup.exe) · [版本说明与校验文件](https://github.com/laiduo12345/TrustRepro-public/releases/tag/v0.2.7)
+
+适用于 Windows 11 x64，安装包约 1.2 GB。
 
 拿到 `TrustRepro_*_x64-setup.exe` 后，运行安装程序，再打开 TrustRepro。第一次启动会准备本地运行环境，接着进入设置页；填好模型服务地址、密钥，并选定研究和执行模型，就可以开始第一段对话。安装包的生成方式见[打包发布](#packaging)。
 
