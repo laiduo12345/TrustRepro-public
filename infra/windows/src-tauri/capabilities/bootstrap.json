@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "bootstrap",
+  "description": "Local startup window commands only.",
+  "windows": ["main"],
+  "permissions": ["core:default", "allow-desktop-status", "allow-prepare-runtime", "allow-enable-wsl", "allow-restart-windows", "allow-open-existing", "allow-return-to-source"]
+}

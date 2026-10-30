@@ -1,0 +1,16 @@
+**
+!backend/
+!backend/pyproject.toml
+!backend/uv.lock
+!backend/alembic.ini
+!backend/src/
+!backend/src/**
+!backend/migrations/
+!backend/migrations/**
+!infra/
+!infra/docker/
+!infra/docker/scientific-requirements.txt
+!infra/egress.conf
+**/__pycache__/
+**/*.pyc
+**/.env

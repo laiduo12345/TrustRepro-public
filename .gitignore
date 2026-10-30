@@ -1,0 +1,49 @@
+# 本地配置与凭证，仅提交脱敏模板。
+.env
+.env.*
+!.env.example
+!.env.*.example
+secrets/
+
+# Python、Node.js 依赖与缓存。
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.uv-cache/
+.ruff_cache/
+.cache/
+*.egg-info/
+node_modules/
+.pnpm-store/
+.vite/
+*.tsbuildinfo
+*.log
+
+# 构建输出与运行数据。
+/backend/build/
+/backend/dist/
+/frontend/dist/
+/infra/windows/src-tauri/target/
+/infra/windows/src-tauri/gen/
+/infra/windows/src-tauri/icons/*
+!/infra/windows/src-tauri/icons/icon.ico
+!/infra/windows/src-tauri/icons/32x32.png
+/var/
+/artifacts/
+/datasets/
+/models/
+/workspaces/
+/uploads/
+/exports/
+/tmp/
+/temp/
+
+# 本地部署覆盖和编辑器文件。
+**/compose.override.yml
+**/compose.override.yaml
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini

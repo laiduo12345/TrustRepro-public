@@ -1,0 +1,13 @@
+.formula { color: inherit; max-width: 100%; text-indent: 0; }
+.formula .katex { font-size: 1em; color: inherit; }
+.formula .katex-display { margin: 0; }
+.formula-inline .katex { display: inline-block; padding: .1em .2em; }
+.formula-inline { display: inline-block; vertical-align: middle; overflow-x: auto; overflow-y: hidden; padding: .15em 0; }
+.formula-display { display: block; overflow-x: auto; overflow-y: hidden; padding: .3em 0; margin: .5em 0; }
+.math-source, .math-pending { white-space: pre-wrap; overflow-wrap: anywhere; color: inherit; }
+.thinking-log .formula-display { margin: .2em 0; }
+.thinking-log .math-text { white-space: pre-wrap; }
+.app-v2 .thinking-log .thinking-part { font-size: inherit; line-height: 22px; margin: 0; white-space: pre-wrap; }
+.app-v2 .thinking-log .thinking-part:last-child { color: #687994; }
+.app-v2 .thinking-block[data-expanded="true"] .thinking-part:not(:last-child) { margin-bottom: 7px; }
+.app-v2 .thinking-block[data-status="streaming"] .thinking-part:last-child::after { content: ""; display: inline-block; height: 10px; width: 1.5px; background: #9aa7d6; margin-left: 3px; vertical-align: -1px; animation: thought-caret 1.05s steps(1) infinite; }

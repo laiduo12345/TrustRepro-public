@@ -1,0 +1,2 @@
+infra/windows/runtime/** text eol=lf
+infra/windows/*.Dockerfile text eol=lf

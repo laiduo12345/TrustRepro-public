@@ -1,0 +1,43 @@
+{
+  "name": "trustrepro-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.17.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "generate:api": "openapi-typescript ../var/openapi.json -o src/lib/api.d.ts",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^6.3.4",
+    "antd": "^6.6.7",
+    "katex": "0.16.47",
+    "mdast-util-from-markdown": "2.1.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-markdown": "10.1.0",
+    "react-router-dom": "^7.18.4",
+    "rehype-katex": "7.0.1",
+    "remark-gfm": "4.0.1",
+    "remark-math": "6.0.0"
+  },
+  "devDependencies": {
+    "@types/hast": "3.0.5",
+    "@types/katex": "0.16.8",
+    "@types/mdast": "4.0.4",
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "micromark-util-types": "2.0.3",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5.9.3",
+    "unified": "11.0.5",
+    "vite": "^8.3.4"
+  }
+}

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>TrustRepro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{margin:0;background:#fafafa;color:#394255;font:14px 'Segoe UI','Microsoft YaHei',sans-serif;display:grid;place-items:center;height:100vh}main{width:460px;padding:36px;background:white;border:1px solid #e1e5ef;border-radius:8px}h1{font-size:24px;margin:0 0 28px;color:#5e6ad2}p{line-height:1.8;white-space:pre-wrap}button{border:1px solid #5e6ad2;border-radius:6px;background:#5e6ad2;color:white;padding:9px 20px;cursor:pointer;margin-right:8px}button:disabled{opacity:.45;cursor:default}.secondary{background:white;color:#5e6ad2}#error{color:#b24646}small{color:#8a94a6}progress{width:100%;height:5px;accent-color:#5e6ad2;margin:16px 0}
+</style></head><body><main><h1>TrustRepro</h1><p id="status">正在检查运行环境…</p><progress id="progress"></progress><p id="error" role="alert"></p><div id="actions" hidden><button id="retry">重试</button><button id="enable" hidden>准备系统组件</button><button id="restart" hidden>重启电脑</button><button id="existing" class="secondary" hidden>打开当前版本</button><button id="source" class="secondary" hidden>返回原目录</button></div><p><small id="hint">首次启动需要准备本地运行环境。</small></p></main>
+<script>
+const invoke=window.__TAURI__.core.invoke;
+const el=id=>document.getElementById(id);
+let submitting=false, commandError='';
+function disableActions(disabled){for(const button of el('actions').querySelectorAll('button'))button.disabled=disabled;}
+async function action(command){
+  if(submitting)return;
+  submitting=true;commandError='';disableActions(true);
+  try{await invoke(command);}catch(e){commandError=String(e);el('error').textContent=commandError;}
+  finally{submitting=false;}
+}
+el('retry').onclick=()=>action('prepare_runtime');
+el('enable').onclick=()=>action('enable_wsl');
+el('restart').onclick=()=>action('restart_windows');
+el('existing').onclick=()=>action('open_existing');
+el('source').onclick=()=>action('return_to_source');
+async function poll(){
+  try{
+    const s=await invoke('desktop_status');
+    el('status').textContent=s.message;
+    el('error').textContent=commandError||s.error||'';
+    el('actions').hidden=!(s.error||s.needsWsl||s.needsRestart||commandError);
+    el('retry').hidden=!!s.needsRestart;
+    el('enable').hidden=!s.needsWsl;
+    el('restart').hidden=!s.needsRestart;
+    el('existing').hidden=!s.canOpenExisting;
+    el('source').hidden=!s.canReturnToSource;
+    el('progress').hidden=!!(s.error||s.needsRestart||commandError);
+    disableActions(submitting||s.busy);
+    el('hint').textContent=s.needsRestart?'请先保存其他工作。重启后打开 TrustRepro 继续。':s.needsWsl?'需要联网准备 WSL2 系统组件。':'';
+  }catch(e){el('error').textContent=String(e);el('actions').hidden=false;}
+  setTimeout(poll,700);
+}
+if(new URLSearchParams(location.search).get('manual')!=='1')action('prepare_runtime');
+poll();
+</script></body></html>

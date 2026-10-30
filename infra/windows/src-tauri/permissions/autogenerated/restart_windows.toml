@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-restart-windows"
+description = "Enables the restart_windows command without any pre-configured scope."
+commands.allow = ["restart_windows"]
+
+[[permission]]
+identifier = "deny-restart-windows"
+description = "Denies the restart_windows command without any pre-configured scope."
+commands.deny = ["restart_windows"]

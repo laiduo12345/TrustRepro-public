@@ -1,0 +1,151 @@
+name: trustrepro
+x-backend: &backend
+  image: trustrepro-backend:local
+  build:
+    context: ..
+    dockerfile: infra/docker/backend.Dockerfile
+  environment: &environment
+    TRUSTREPRO_DATABASE_URL: postgresql+psycopg://trustrepro:trustrepro_dev@postgres:5432/trustrepro
+    TRUSTREPRO_MODEL_BASE_URL: ${TRUSTREPRO_MODEL_BASE_URL:-http://host.docker.internal:8317/v1}
+    TRUSTREPRO_MODEL_NAME: ${TRUSTREPRO_MODEL_NAME:-gpt-6.1-sol}
+    TRUSTREPRO_MODEL_INPUT_COST_PER_MILLION: ${TRUSTREPRO_MODEL_INPUT_COST_PER_MILLION:-1}
+    TRUSTREPRO_MODEL_OUTPUT_COST_PER_MILLION: ${TRUSTREPRO_MODEL_OUTPUT_COST_PER_MILLION:-5}
+    TRUSTREPRO_MODEL_PRICE_CURRENCY: ${TRUSTREPRO_MODEL_PRICE_CURRENCY:-USD}
+    TRUSTREPRO_USD_TO_CNY_RATE: ${TRUSTREPRO_USD_TO_CNY_RATE:-6.7}
+    TRUSTREPRO_MODEL_UNKNOWN_RESERVATION: ${TRUSTREPRO_MODEL_UNKNOWN_RESERVATION:-0.15}
+    TRUSTREPRO_VAR_ROOT: /app/var
+    TRUSTREPRO_RUNTIME_VOLUME: trustrepro-runtime
+    TRUSTREPRO_SANDBOX_NETWORK: trustrepro-sandbox
+    TRUSTREPRO_EGRESS_PROXY: http://egress:3128
+  volumes:
+    - runtime:/app/var
+  depends_on:
+    postgres:
+      condition: service_healthy
+    volume-init:
+      condition: service_completed_successfully
+  init: true
+services:
+  volume-init:
+    image: public.ecr.aws/docker/library/busybox:1.37
+    user: '0:0'
+    command: ['sh','-c','chown 10001:10001 /runtime /secrets && chmod 700 /runtime /secrets']
+    volumes: ['runtime:/runtime', 'api-secrets:/secrets']
+  postgres:
+    restart: unless-stopped
+    image: public.ecr.aws/docker/library/postgres:17@sha256:39fb82e41109483c81ac15422a302500b4a753777b47f8431038703536bc6c52
+    environment:
+      POSTGRES_DB: trustrepro
+      POSTGRES_USER: trustrepro
+      POSTGRES_PASSWORD: trustrepro_dev
+    ports: ['127.0.0.1:5432:5432']
+    volumes: ['postgres:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL','pg_isready -h 127.0.0.1 -U trustrepro -d trustrepro']
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  egress:
+    build:
+      context: ..
+      dockerfile: infra/docker/egress.Dockerfile
+    networks: [default, sandbox]
+    restart: unless-stopped
+  sandbox-image:
+    image: trustrepro-sandbox:local
+    build:
+      context: ..
+      dockerfile: infra/docker/sandbox.Dockerfile
+    profiles: [build]
+    command: ['true']
+  migrate:
+    <<: *backend
+    command: ['alembic','upgrade','head']
+    profiles: [backend]
+  api:
+    <<: *backend
+    environment:
+      <<: *environment
+      TRUSTREPRO_MODEL_API_KEY: ${TRUSTREPRO_MODEL_API_KEY:-}
+      TRUSTREPRO_SECRETS_ROOT: /app/secrets
+    volumes: [runtime:/app/var, api-secrets:/app/secrets]
+    restart: unless-stopped
+    command: ['uvicorn','trustrepro.main:app','--host','0.0.0.0','--port','8000']
+    profiles: [backend]
+    ports: ['127.0.0.1:8000:8000']
+    depends_on:
+      postgres: {condition: service_healthy}
+      volume-init: {condition: service_completed_successfully}
+      migrate: {condition: service_completed_successfully}
+    healthcheck:
+      test: ['CMD','python','-c',"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+  agent-runner:
+    <<: *backend
+    healthcheck:
+      test: ['CMD','python','-m','trustrepro.infrastructure.health','agent-runner']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    command: ['python','-m','trustrepro.workers.runner']
+    profiles: [backend]
+    restart: unless-stopped
+    depends_on:
+      api: {condition: service_healthy}
+  job-worker:
+    <<: *backend
+    healthcheck:
+      test: ['CMD','python','-m','trustrepro.infrastructure.health','job-worker']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    command: ['python','-m','trustrepro.workers.jobs']
+    profiles: [backend]
+    restart: unless-stopped
+    depends_on:
+      api: {condition: service_healthy}
+  progression:
+    <<: *backend
+    command: ['python','-m','trustrepro.workers.progression']
+    profiles: [backend]
+    restart: unless-stopped
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: ['CMD','python','-m','trustrepro.infrastructure.health','progression']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+  sandbox-manager:
+    <<: *backend
+    user: '0:0'
+    command: ['uvicorn','trustrepro.sandbox.manager:app','--host','0.0.0.0','--port','8090']
+    environment:
+      <<: *environment
+      TRUSTREPRO_MODEL_API_KEY: ''
+    volumes:
+      - runtime:/app/var
+      - /var/run/docker.sock:/var/run/docker.sock
+    profiles: [backend]
+    restart: unless-stopped
+    depends_on:
+      api: {condition: service_healthy}
+      egress: {condition: service_started}
+    healthcheck:
+      test: ['CMD','python','-c',"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+volumes:
+  api-secrets:
+    name: trustrepro-api-secrets
+  runtime:
+    name: trustrepro-runtime
+  postgres:
+    name: trustrepro-postgres
+networks:
+  sandbox:
+    name: trustrepro-sandbox
+    internal: true

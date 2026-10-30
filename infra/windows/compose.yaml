@@ -1,0 +1,116 @@
+name: trustrepro-desktop
+x-backend: &backend
+  image: trustrepro-backend:${TRUSTREPRO_VERSION:?Application version required}
+  pull_policy: never
+  environment: &environment
+    TRUSTREPRO_DATABASE_URL: postgresql+psycopg://trustrepro:${POSTGRES_PASSWORD:?Password required}@postgres:5432/trustrepro
+    TRUSTREPRO_MODEL_PRICE_CURRENCY: CNY
+    TRUSTREPRO_MODEL_UNKNOWN_RESERVATION: '1.005'
+    TRUSTREPRO_VAR_ROOT: /app/var
+    TRUSTREPRO_RUNTIME_VOLUME: trustrepro-desktop-runtime
+    TRUSTREPRO_SANDBOX_IMAGE: trustrepro-sandbox:${TRUSTREPRO_VERSION}
+    TRUSTREPRO_SANDBOX_NETWORK: trustrepro-desktop-sandbox
+    TRUSTREPRO_EGRESS_PROXY: http://egress:3128
+  volumes: [runtime:/app/var]
+  extra_hosts: ['host.docker.internal:${TRUSTREPRO_WINDOWS_HOST:-host-gateway}']
+  init: true
+  restart: unless-stopped
+services:
+  volume-init:
+    image: public.ecr.aws/docker/library/busybox:1.37
+    pull_policy: never
+    user: '0:0'
+    command: ['sh', '-c', 'chown 10001:10001 /runtime /secrets && chmod 700 /runtime /secrets']
+    volumes: [runtime:/runtime, api-secrets:/secrets]
+    restart: 'no'
+  postgres:
+    image: trustrepro-postgres:17-desktop
+    pull_policy: never
+    environment:
+      POSTGRES_DB: trustrepro
+      POSTGRES_USER: trustrepro
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes: [postgres:/var/lib/postgresql/data]
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -h 127.0.0.1 -U trustrepro -d trustrepro']
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  migrate:
+    <<: *backend
+    command: ['alembic', 'upgrade', 'head']
+    restart: 'no'
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    <<: *backend
+    command: ['uvicorn', 'trustrepro.main:app', '--host', '0.0.0.0', '--port', '8000']
+    environment:
+      <<: *environment
+      TRUSTREPRO_SECRETS_ROOT: /app/secrets
+    volumes:
+      - runtime:/app/var
+      - api-secrets:/app/secrets
+      - /var/lib/trustrepro/desktop-token:/run/trustrepro-desktop-token:ro
+    ports: ['127.0.0.1:${TRUSTREPRO_HTTP_PORT:?Port required}:8000']
+    depends_on:
+      postgres: {condition: service_healthy}
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  agent-runner:
+    <<: *backend
+    command: ['python', '-m', 'trustrepro.workers.runner']
+    depends_on: {api: {condition: service_healthy}}
+    healthcheck:
+      test: ['CMD', 'python', '-m', 'trustrepro.infrastructure.health', 'agent-runner']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  job-worker:
+    <<: *backend
+    command: ['python', '-m', 'trustrepro.workers.jobs']
+    depends_on: {api: {condition: service_healthy}}
+    healthcheck:
+      test: ['CMD', 'python', '-m', 'trustrepro.infrastructure.health', 'job-worker']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  progression:
+    <<: *backend
+    command: ['python', '-m', 'trustrepro.workers.progression']
+    depends_on: {api: {condition: service_healthy}}
+    healthcheck:
+      test: ['CMD', 'python', '-m', 'trustrepro.infrastructure.health', 'progression']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  sandbox-manager:
+    <<: *backend
+    user: '0:0'
+    command: ['uvicorn', 'trustrepro.sandbox.manager:app', '--host', '0.0.0.0', '--port', '8090']
+    volumes:
+      - runtime:/app/var
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      api: {condition: service_healthy}
+      egress: {condition: service_started}
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  egress:
+    image: trustrepro-egress:${TRUSTREPRO_VERSION}
+    pull_policy: never
+    networks: [default, sandbox]
+    restart: unless-stopped
+volumes:
+  api-secrets: {name: trustrepro-desktop-api-secrets}
+  runtime: {name: trustrepro-desktop-runtime}
+  postgres: {name: trustrepro-desktop-postgres}
+networks:
+  sandbox: {name: trustrepro-desktop-sandbox, internal: true}
